@@ -11,6 +11,7 @@ Parse unstructured logs by learning patterns automatically. No regex required.
 - **Format drift detection** - Detects when log formats change mid-file
 - **Multiple outputs** - JSON Lines, SQLite, DuckDB, Parquet
 - **Performance optimized** - Streaming processing and parallel learning for large files
+- **Testing utilities** - Mocks, fixtures, and sample data generators for reliable integrations
 
 ## Installation
 
@@ -102,6 +103,16 @@ Learn patterns using parallel processing (for large files).
 log-sculptor fast-learn large.log -o patterns.json --workers 4
 ```
 
+### generate
+Generate sample log data for testing and demos.
+```bash
+log-sculptor generate sample.log -t app -n 1000
+log-sculptor generate apache.log -t apache -n 500 --seed 42
+log-sculptor generate mixed.log -t mixed -n 1000  # For drift testing
+```
+
+Available types: `app`, `apache`, `syslog`, `json`, `mixed`
+
 ## Output Formats
 
 ### JSON Lines (jsonl)
@@ -185,6 +196,97 @@ for change in report.format_changes:
    - Timestamps (ISO 8601, Apache CLF, syslog, Unix epoch)
    - IPs, URLs, UUIDs
    - Integers, floats, booleans
+
+## Testing Utilities
+
+log-sculptor includes comprehensive testing utilities for building reliable integrations.
+
+### Sample Data Generation
+
+```python
+from log_sculptor.testing import (
+    generate_apache_logs,
+    generate_syslog,
+    generate_json_logs,
+    generate_app_logs,
+    write_sample_logs,
+)
+
+# Generate Apache logs
+for line in generate_apache_logs(count=100, seed=42):
+    print(line)
+
+# Generate JSON structured logs
+for line in generate_json_logs(count=50):
+    print(line)
+
+# Write directly to file
+write_sample_logs("test.log", generator="app", count=1000, seed=42)
+```
+
+### Mock Objects
+
+```python
+from log_sculptor.testing import (
+    MockFileReader,
+    MockFileWriter,
+    MockPatternMatcher,
+    MockTypeDetector,
+)
+
+# Mock file reader
+reader = MockFileReader()
+reader.add_file("/test.log", ["line1", "line2", "line3"])
+lines = reader.read_lines(Path("/test.log"))
+assert reader.read_count == 1
+
+# Mock pattern matcher with custom responses
+matcher = MockPatternMatcher()
+matcher.add_response("GET /api", MockPattern(id="http"), {"method": "GET"})
+pattern, fields = matcher.match("GET /api")
+```
+
+### Test Fixtures
+
+```python
+from log_sculptor.testing import (
+    create_test_patterns,
+    create_test_log_file,
+    SandboxContext,
+    isolated_test,
+)
+
+# Create test patterns
+patterns = create_test_patterns(count=3, with_examples=True)
+
+# Create test log file
+create_test_log_file(Path("test.log"), generator="apache", count=100)
+
+# Isolated test environment with mocks
+with isolated_test() as ctx:
+    log_file = ctx.create_log_file("test.log", generator="app", count=50)
+    ctx.add_mock_file("/virtual.log", ["mock line 1", "mock line 2"])
+    # Tests run in isolation, temp files cleaned up automatically
+```
+
+### Dependency Injection
+
+```python
+from log_sculptor import get_container, register, resolve, reset_container
+from log_sculptor.di import FileReader, FileWriter
+
+# Register custom implementations
+class MyFileReader:
+    def read_lines(self, path):
+        # Custom implementation
+        pass
+
+register(FileReader, lambda: MyFileReader())
+reader = resolve(FileReader)
+
+# Reset for test isolation
+reset_container()
+```
 
 ## License
 
