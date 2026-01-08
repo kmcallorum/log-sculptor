@@ -1,7 +1,6 @@
 """Tests for log data generators."""
 import pytest
 import json
-from pathlib import Path
 from log_sculptor.testing.generators import (
     LogGenerator,
     generate_apache_logs,

@@ -1,5 +1,4 @@
 """Tests for test fixtures and helpers."""
-import pytest
 from pathlib import Path
 from log_sculptor.testing.fixtures import (
     create_test_patterns,

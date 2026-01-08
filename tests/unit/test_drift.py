@@ -1,5 +1,4 @@
 """Tests for format drift detection."""
-import pytest
 from pathlib import Path
 from log_sculptor.core.drift import DriftDetector, DriftReport, detect_drift
 from log_sculptor.core.patterns import PatternSet, learn_patterns

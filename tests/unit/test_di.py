@@ -2,7 +2,6 @@
 import pytest
 from log_sculptor.di import (
     DIContainer,
-    get_container,
     register,
     resolve,
     reset_container,

@@ -121,18 +121,17 @@ def parse(logfile: Path, patterns: Path, output_format: str, output: Path,
     else:
         records = parse_logs(logfile, pattern_set)
 
-    writer = _get_writer(output_format)
+    if multiline:
+        tmp_path.unlink()
 
     if output_format == "jsonl":
-        count = writer(records, output, include_raw=include_raw, include_unmatched=include_unmatched)
+        count = write_jsonl(records, output, include_raw=include_raw, include_unmatched=include_unmatched)
     else:
         records_list = list(records)
         if not include_unmatched:
             records_list = [r for r in records_list if r.matched]
+        writer = _get_writer(output_format)
         count = writer(records_list, output, patterns=pattern_set, include_raw=include_raw)
-
-    if multiline:
-        tmp_path.unlink()
 
     click.echo(f"Parsed {count} records -> {output}")
 
@@ -169,15 +168,14 @@ def auto(logfile: Path, output_format: str, output: Path, sample_size: int | Non
             click.echo(f"Found {len(pattern_set.patterns)} patterns, parsing...")
         records = parse_logs(logfile, pattern_set)
 
-    writer = _get_writer(output_format)
-
-    if output_format == "jsonl":
-        count = writer(records, output, include_raw=include_raw)
-    else:
-        count = writer(list(records), output, patterns=pattern_set, include_raw=include_raw)
-
     if multiline:
         tmp_path.unlink()
+
+    if output_format == "jsonl":
+        count = write_jsonl(records, output, include_raw=include_raw)
+    else:
+        writer = _get_writer(output_format)
+        count = writer(list(records), output, patterns=pattern_set, include_raw=include_raw)
 
     click.echo(f"Learned {len(pattern_set.patterns)} patterns, parsed {count} records -> {output}")
 

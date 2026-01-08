@@ -1,5 +1,4 @@
 """Tests for smart field naming."""
-import pytest
 from log_sculptor.core.naming import infer_field_name, generate_field_names
 from log_sculptor.core.tokenizer import Token, TokenType, tokenize
 

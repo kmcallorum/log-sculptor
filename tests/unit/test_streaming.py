@@ -1,5 +1,4 @@
 """Tests for streaming and performance optimizations."""
-import pytest
 from pathlib import Path
 from log_sculptor.core.streaming import stream_parse, PatternCache, parallel_learn
 from log_sculptor.core.patterns import PatternSet, learn_patterns

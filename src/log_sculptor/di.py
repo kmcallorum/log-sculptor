@@ -103,11 +103,9 @@ class FileReader(Protocol):
 
     def read_lines(self, path: Path) -> list[str]:
         """Read all lines from a file."""
-        ...
 
     def iter_lines(self, path: Path):
         """Iterate over lines in a file."""
-        ...
 
 
 @runtime_checkable
@@ -116,11 +114,9 @@ class FileWriter(Protocol):
 
     def write_text(self, path: Path, content: str) -> None:
         """Write text to a file."""
-        ...
 
     def write_bytes(self, path: Path, content: bytes) -> None:
         """Write bytes to a file."""
-        ...
 
 
 @runtime_checkable
@@ -129,7 +125,6 @@ class Tokenizer(Protocol):
 
     def tokenize(self, line: str) -> list:
         """Tokenize a log line."""
-        ...
 
 
 @runtime_checkable
@@ -138,7 +133,6 @@ class PatternMatcher(Protocol):
 
     def match(self, line: str) -> tuple[Any, dict | None]:
         """Match a line against patterns."""
-        ...
 
 
 @runtime_checkable
@@ -147,7 +141,6 @@ class TypeDetector(Protocol):
 
     def detect(self, value: str) -> Any:
         """Detect the type of a value."""
-        ...
 
 
 # Default implementations

@@ -1,5 +1,4 @@
 """Tests for multi-line log handling."""
-import pytest
 from log_sculptor.parsers.multiline import (
     ContinuationDetector,
     MultilineJoiner,
