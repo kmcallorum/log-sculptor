@@ -176,34 +176,45 @@ def _generate_pattern_id(elements: list[PatternElement]) -> str:
     return hashlib.md5(sig.encode()).hexdigest()[:12]
 
 
-def _generate_field_name(token: Token, index: int, prev_token: Token | None) -> str:
-    if prev_token and prev_token.type == TokenType.WORD:
-        return prev_token.value.lower()
-    type_names = {
-        TokenType.TIMESTAMP: "timestamp",
-        TokenType.IP: "ip",
-        TokenType.QUOTED: "message",
-        TokenType.BRACKET: "data",
-        TokenType.NUMBER: "value",
-        TokenType.WORD: "field",
-    }
-    base = type_names.get(token.type, "field")
-    return f"{base}_{index}"
+def _pattern_from_tokens(tokens: list[Token], line: str, smart_naming: bool = True) -> Pattern:
+    from log_sculptor.core.naming import generate_field_names
 
-
-def _pattern_from_tokens(tokens: list[Token], line: str) -> Pattern:
     elements: list[PatternElement] = []
-    field_index = 0
-    prev_non_ws: Token | None = None
 
-    for token in tokens:
-        if token.type == TokenType.WHITESPACE:
-            elements.append(PatternElement(type="literal", value=token.value, token_type=TokenType.WHITESPACE))
-        else:
-            field_name = _generate_field_name(token, field_index, prev_non_ws)
-            elements.append(PatternElement(type="field", token_type=token.type, field_name=field_name))
-            field_index += 1
-            prev_non_ws = token
+    if smart_naming:
+        field_names = generate_field_names(tokens)
+        name_idx = 0
+        for token in tokens:
+            if token.type == TokenType.WHITESPACE:
+                elements.append(PatternElement(type="literal", value=token.value, token_type=TokenType.WHITESPACE))
+            else:
+                field_name = field_names[name_idx] if name_idx < len(field_names) else f"field_{name_idx}"
+                elements.append(PatternElement(type="field", token_type=token.type, field_name=field_name))
+                name_idx += 1
+    else:
+        # Legacy naming fallback
+        field_index = 0
+        prev_non_ws: Token | None = None
+        for token in tokens:
+            if token.type == TokenType.WHITESPACE:
+                elements.append(PatternElement(type="literal", value=token.value, token_type=TokenType.WHITESPACE))
+            else:
+                if prev_non_ws and prev_non_ws.type == TokenType.WORD:
+                    field_name = prev_non_ws.value.lower()
+                else:
+                    type_names = {
+                        TokenType.TIMESTAMP: "timestamp",
+                        TokenType.IP: "ip",
+                        TokenType.QUOTED: "message",
+                        TokenType.BRACKET: "data",
+                        TokenType.NUMBER: "value",
+                        TokenType.WORD: "field",
+                    }
+                    base = type_names.get(token.type, "field")
+                    field_name = f"{base}_{field_index}"
+                elements.append(PatternElement(type="field", token_type=token.type, field_name=field_name))
+                field_index += 1
+                prev_non_ws = token
 
     pattern_id = _generate_pattern_id(elements)
     return Pattern(id=pattern_id, elements=elements, frequency=1, example=line)

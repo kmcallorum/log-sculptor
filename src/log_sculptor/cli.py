@@ -233,5 +233,49 @@ def merge(patterns_file: Path, output: Path | None, threshold: float, verbose: b
     click.echo(f"Merged {original_count} -> {len(pattern_set.patterns)} patterns -> {output_path}")
 
 
+@main.command()
+@click.argument("logfile", type=click.Path(exists=True, path_type=Path))
+@click.option("-p", "--patterns", required=True, type=click.Path(exists=True, path_type=Path), help="Patterns file")
+@click.option("--window", type=int, default=100, help="Window size for drift detection")
+@click.option("-v", "--verbose", is_flag=True)
+def drift(logfile: Path, patterns: Path, window: int, verbose: bool) -> None:
+    """Detect format changes in a log file."""
+    from log_sculptor.core.drift import detect_drift
+
+    pattern_set = PatternSet.load(patterns)
+    if verbose:
+        click.echo(f"Analyzing {logfile} for format changes...")
+
+    report = detect_drift(logfile, pattern_set, window_size=window)
+
+    click.echo(report.summary())
+
+    if report.has_drift:
+        sys.exit(1)
+    sys.exit(0)
+
+
+@main.command()
+@click.argument("logfile", type=click.Path(exists=True, path_type=Path))
+@click.option("-o", "--output", required=True, type=click.Path(path_type=Path))
+@click.option("--workers", type=int, default=4, help="Number of parallel workers")
+@click.option("--chunk-size", type=int, default=10000, help="Lines per chunk")
+@click.option("-v", "--verbose", is_flag=True)
+def fast_learn(logfile: Path, output: Path, workers: int, chunk_size: int, verbose: bool) -> None:
+    """Learn patterns using parallel processing (for large files)."""
+    from log_sculptor.core.streaming import parallel_learn
+
+    if verbose:
+        click.echo(f"Learning patterns from {logfile} using {workers} workers...")
+
+    patterns = parallel_learn(logfile, num_workers=workers, chunk_size=chunk_size)
+
+    if verbose:
+        click.echo(f"Found {len(patterns.patterns)} patterns")
+
+    patterns.save(output)
+    click.echo(f"Learned {len(patterns.patterns)} patterns -> {output}")
+
+
 if __name__ == "__main__":
     main()
