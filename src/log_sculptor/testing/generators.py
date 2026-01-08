@@ -1,7 +1,6 @@
 """Log data generators for testing and demos."""
 
 import random
-import string
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
 from typing import Iterator

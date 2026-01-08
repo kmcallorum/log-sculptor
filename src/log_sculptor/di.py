@@ -1,7 +1,6 @@
 """Dependency injection container for log-sculptor."""
 
 from typing import Protocol, TypeVar, Callable, Any, runtime_checkable
-from dataclasses import dataclass, field
 from pathlib import Path
 
 

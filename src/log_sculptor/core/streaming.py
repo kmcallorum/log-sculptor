@@ -6,7 +6,7 @@ from typing import Iterator, Callable
 from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from log_sculptor.core.tokenizer import tokenize, Token, token_signature
+from log_sculptor.core.tokenizer import tokenize
 from log_sculptor.core.patterns import PatternSet, ParsedRecord, Pattern
 
 

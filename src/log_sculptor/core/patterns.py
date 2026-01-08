@@ -6,7 +6,7 @@ from typing import Iterator, Literal, Any
 import hashlib
 import orjson
 
-from log_sculptor.core.tokenizer import Token, TokenType, tokenize, token_signature
+from log_sculptor.core.tokenizer import Token, TokenType, tokenize
 from log_sculptor.exceptions import PatternLoadError, PatternSaveError
 
 

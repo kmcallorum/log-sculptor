@@ -3,7 +3,6 @@
 import hashlib
 from log_sculptor.core.patterns import Pattern, PatternElement, PatternSet
 from log_sculptor.core.tokenizer import TokenType
-from log_sculptor.core.clustering import sequence_similarity
 
 
 def _get_type_signature(pattern: Pattern) -> tuple[TokenType | None, ...]:

@@ -2,7 +2,6 @@
 
 from pathlib import Path
 from dataclasses import dataclass, field
-from typing import Any
 from contextlib import contextmanager
 import tempfile
 import shutil

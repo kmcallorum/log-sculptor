@@ -1,11 +1,10 @@
 """Format change (drift) detection for log files."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator
 from collections import defaultdict
 
-from log_sculptor.core.patterns import PatternSet, parse_logs, ParsedRecord
+from log_sculptor.core.patterns import PatternSet, parse_logs
 
 
 @dataclass
