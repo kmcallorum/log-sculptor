@@ -1,0 +1,16 @@
+2024-01-15 10:23:45 INFO Application started
+2024-01-15 10:23:46 ERROR Failed to process request
+java.lang.NullPointerException: Cannot invoke method on null
+	at com.example.Service.process(Service.java:42)
+	at com.example.Controller.handleRequest(Controller.java:115)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:897)
+Caused by: java.io.IOException: Connection reset
+	at java.net.SocketInputStream.read(SocketInputStream.java:189)
+	... 5 more
+2024-01-15 10:23:47 INFO Recovery successful
+2024-01-15 10:23:48 DEBUG Processing batch {
+    "items": 100,
+    "status": "pending"
+}
+2024-01-15 10:23:49 INFO Batch complete

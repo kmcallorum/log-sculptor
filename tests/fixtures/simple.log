@@ -1,0 +1,8 @@
+INFO 2024-01-15T10:30:00Z Starting application
+INFO 2024-01-15T10:30:01Z Loading configuration
+INFO 2024-01-15T10:30:02Z Database connected
+WARN 2024-01-15T10:30:03Z High memory usage detected
+ERROR 2024-01-15T10:30:04Z Failed to process request
+INFO 2024-01-15T10:30:05Z Request completed successfully
+DEBUG 2024-01-15T10:30:06Z Cache hit for key=user123
+INFO 2024-01-15T10:30:07Z Shutting down
