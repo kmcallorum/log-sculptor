@@ -5,9 +5,10 @@ import hashlib
 from typing import TYPE_CHECKING
 
 from log_sculptor.core.tokenizer import TokenType
+from log_sculptor.core.models import Pattern, PatternElement
 
 if TYPE_CHECKING:
-    from log_sculptor.core.patterns import Pattern, PatternSet
+    from log_sculptor.core.patterns import PatternSet
 
 
 def _get_type_signature(pattern: Pattern) -> tuple[TokenType | None, ...]:
@@ -62,8 +63,6 @@ def merge_two(p1: Pattern, p2: Pattern) -> Pattern:
     Returns:
         Merged pattern.
     """
-    from log_sculptor.core.patterns import Pattern, PatternElement
-
     new_elements: list[PatternElement] = []
     field_index = 0
 
