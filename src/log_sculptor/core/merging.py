@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from log_sculptor.core.tokenizer import TokenType
 
 if TYPE_CHECKING:
-    from log_sculptor.core.patterns import Pattern, PatternElement, PatternSet
+    from log_sculptor.core.patterns import Pattern, PatternSet
 
 
 def _get_type_signature(pattern: Pattern) -> tuple[TokenType | None, ...]:
