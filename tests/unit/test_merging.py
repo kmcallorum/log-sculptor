@@ -6,7 +6,6 @@ from log_sculptor.core.merging import (
     can_merge,
     merge_two,
     merge_patterns,
-    merge_pattern_set,
 )
 
 
@@ -177,23 +176,23 @@ class TestMergePatterns:
         assert result == []
 
 
-class TestMergePatternSet:
-    """Tests for merge_pattern_set function."""
+class TestPatternSetMergeSimilar:
+    """Tests for PatternSet.merge_similar method."""
 
-    def test_merge_pattern_set(self):
+    def test_merge_similar(self):
         ps = PatternSet()
         ps.add(make_pattern([("literal", "WORD", "INFO"), ("literal", "WHITESPACE", " "), ("field", "WORD", "m")], "p1", 5))
         ps.add(make_pattern([("literal", "WORD", "WARN"), ("literal", "WHITESPACE", " "), ("field", "WORD", "m")], "p2", 3))
 
-        merged_ps = merge_pattern_set(ps)
-        assert len(merged_ps.patterns) == 1
-        assert merged_ps.patterns[0].frequency == 8
+        ps.merge_similar()
+        assert len(ps.patterns) == 1
+        assert ps.patterns[0].frequency == 8
 
     def test_merged_set_sorted_by_frequency(self):
         ps = PatternSet()
         ps.add(make_pattern([("field", "NUMBER", "n")], "p1", 2))
         ps.add(make_pattern([("field", "WORD", "w")], "p2", 10))
 
-        merged_ps = merge_pattern_set(ps)
+        ps.merge_similar()
         # Should be sorted by frequency descending
-        assert merged_ps.patterns[0].frequency >= merged_ps.patterns[-1].frequency
+        assert ps.patterns[0].frequency >= ps.patterns[-1].frequency
