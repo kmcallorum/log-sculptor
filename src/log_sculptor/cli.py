@@ -277,5 +277,18 @@ def fast_learn(logfile: Path, output: Path, workers: int, chunk_size: int, verbo
     click.echo(f"Learned {len(patterns.patterns)} patterns -> {output}")
 
 
+@main.command()
+@click.argument("output", type=click.Path(path_type=Path))
+@click.option("-t", "--type", "log_type", type=click.Choice(["app", "apache", "syslog", "json", "mixed"]), default="app", help="Log format type")
+@click.option("-n", "--count", type=int, default=1000, help="Number of lines to generate")
+@click.option("--seed", type=int, default=None, help="Random seed for reproducibility")
+def generate(output: Path, log_type: str, count: int, seed: int | None) -> None:
+    """Generate sample log data for testing."""
+    from log_sculptor.testing.generators import write_sample_logs
+
+    write_sample_logs(output, generator=log_type, count=count, seed=seed)
+    click.echo(f"Generated {count} {log_type} log lines -> {output}")
+
+
 if __name__ == "__main__":
     main()
