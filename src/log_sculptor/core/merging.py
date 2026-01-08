@@ -1,8 +1,13 @@
 """Pattern merging for log-sculptor."""
+from __future__ import annotations
 
 import hashlib
-from log_sculptor.core.patterns import Pattern, PatternElement, PatternSet
+from typing import TYPE_CHECKING
+
 from log_sculptor.core.tokenizer import TokenType
+
+if TYPE_CHECKING:
+    from log_sculptor.core.patterns import Pattern, PatternElement, PatternSet
 
 
 def _get_type_signature(pattern: Pattern) -> tuple[TokenType | None, ...]:
@@ -57,6 +62,8 @@ def merge_two(p1: Pattern, p2: Pattern) -> Pattern:
     Returns:
         Merged pattern.
     """
+    from log_sculptor.core.patterns import Pattern, PatternElement
+
     new_elements: list[PatternElement] = []
     field_index = 0
 
@@ -207,10 +214,12 @@ def merge_pattern_set(pattern_set: PatternSet, threshold: float = 0.8) -> Patter
     Returns:
         New PatternSet with merged patterns.
     """
+    from log_sculptor.core.patterns import PatternSet as PS
+
     merged = merge_patterns(pattern_set.patterns, threshold)
     merged.sort(key=lambda p: p.frequency, reverse=True)
 
-    new_set = PatternSet(version=pattern_set.version)
+    new_set = PS(version=pattern_set.version)
     for p in merged:
         new_set.add(p)
 

@@ -13,21 +13,6 @@ from log_sculptor.outputs.sqlite import write_sqlite
 FORMAT_CHOICES = ["jsonl", "sqlite", "duckdb", "parquet"]
 
 
-def _get_writer(output_format: str):
-    """Get the appropriate writer function for the output format."""
-    if output_format == "jsonl":
-        return write_jsonl
-    elif output_format == "sqlite":
-        return write_sqlite
-    elif output_format == "duckdb":
-        from log_sculptor.outputs import write_duckdb
-        return write_duckdb
-    elif output_format == "parquet":
-        from log_sculptor.outputs import write_parquet
-        return write_parquet
-    raise ValueError(f"Unknown output format: {output_format}")
-
-
 def _preprocess_lines(logfile: Path, multiline: bool):
     """Preprocess log file lines, optionally joining multi-line entries."""
     if multiline:
@@ -130,8 +115,14 @@ def parse(logfile: Path, patterns: Path, output_format: str, output: Path,
         records_list = list(records)
         if not include_unmatched:
             records_list = [r for r in records_list if r.matched]
-        writer = _get_writer(output_format)
-        count = writer(records_list, output, patterns=pattern_set, include_raw=include_raw)
+        if output_format == "sqlite":
+            count = write_sqlite(records_list, output, patterns=pattern_set, include_raw=include_raw)
+        elif output_format == "duckdb":
+            from log_sculptor.outputs import write_duckdb
+            count = write_duckdb(records_list, output, patterns=pattern_set, include_raw=include_raw)
+        elif output_format == "parquet":
+            from log_sculptor.outputs import write_parquet
+            count = write_parquet(records_list, output, patterns=pattern_set, include_raw=include_raw)
 
     click.echo(f"Parsed {count} records -> {output}")
 
@@ -173,9 +164,14 @@ def auto(logfile: Path, output_format: str, output: Path, sample_size: int | Non
 
     if output_format == "jsonl":
         count = write_jsonl(records, output, include_raw=include_raw)
-    else:
-        writer = _get_writer(output_format)
-        count = writer(list(records), output, patterns=pattern_set, include_raw=include_raw)
+    elif output_format == "sqlite":
+        count = write_sqlite(list(records), output, patterns=pattern_set, include_raw=include_raw)
+    elif output_format == "duckdb":
+        from log_sculptor.outputs import write_duckdb
+        count = write_duckdb(list(records), output, patterns=pattern_set, include_raw=include_raw)
+    elif output_format == "parquet":
+        from log_sculptor.outputs import write_parquet
+        count = write_parquet(list(records), output, patterns=pattern_set, include_raw=include_raw)
 
     click.echo(f"Learned {len(pattern_set.patterns)} patterns, parsed {count} records -> {output}")
 
