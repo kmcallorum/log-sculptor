@@ -294,6 +294,39 @@ reader = resolve(FileReader)
 reset_container()
 ```
 
+### pytest-agents Integration
+
+log-sculptor integrates with [pytest-agents](https://pypi.org/project/pytest-agents/) for enhanced test organization and AI-powered testing capabilities.
+
+```python
+import pytest
+
+@pytest.mark.unit
+def test_pattern_learning(tmp_path):
+    """Unit test with pytest-agents marker."""
+    from log_sculptor.core.patterns import learn_patterns
+    from log_sculptor.testing.generators import write_sample_logs
+
+    log_file = tmp_path / "test.log"
+    write_sample_logs(log_file, generator="apache", count=50, seed=42)
+
+    patterns = learn_patterns(log_file)
+    assert len(patterns.patterns) > 0
+
+@pytest.mark.integration
+def test_full_workflow(tmp_path):
+    """Integration test with pytest-agents marker."""
+    # Full learn -> save -> load -> parse workflow
+    pass
+
+@pytest.mark.performance
+def test_large_file_parsing(tmp_path):
+    """Performance benchmark test."""
+    pass
+```
+
+Install with: `pip install pytest-agents` (requires Python 3.11+)
+
 ## License
 
 MIT
