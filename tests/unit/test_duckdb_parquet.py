@@ -7,6 +7,19 @@ from log_sculptor.outputs.duckdb import write_duckdb, _sanitize_column_name
 from log_sculptor.outputs.parquet import write_parquet, _sanitize_column_name as parquet_sanitize
 from log_sculptor.testing.generators import write_sample_logs
 
+# Check for optional dependencies
+try:
+    import duckdb
+    HAS_DUCKDB = True
+except ImportError:
+    HAS_DUCKDB = False
+
+try:
+    import pyarrow
+    HAS_PYARROW = True
+except ImportError:
+    HAS_PYARROW = False
+
 
 @pytest.fixture
 def sample_records(tmp_path):
@@ -56,6 +69,7 @@ class TestSanitizeColumnName:
         assert parquet_sanitize("1field") == "f_1field"
 
 
+@pytest.mark.skipif(not HAS_DUCKDB, reason="duckdb not installed")
 class TestDuckDBOutput:
     """Tests for DuckDB output writer."""
 
@@ -153,6 +167,7 @@ class TestDuckDBOutput:
         assert count == len(records)
 
 
+@pytest.mark.skipif(not HAS_PYARROW, reason="pyarrow not installed")
 class TestParquetOutput:
     """Tests for Parquet output writer."""
 
@@ -233,6 +248,7 @@ class TestParquetOutput:
         assert count == len(records)
 
 
+@pytest.mark.skipif(not HAS_DUCKDB or not HAS_PYARROW, reason="duckdb or pyarrow not installed")
 class TestSpecialFieldNames:
     """Test handling of special field names."""
 

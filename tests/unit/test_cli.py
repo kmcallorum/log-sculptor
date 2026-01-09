@@ -6,6 +6,19 @@ from click.testing import CliRunner
 from log_sculptor.cli import main, learn, parse, auto, show, validate, merge, drift, fast_learn, generate
 from log_sculptor.testing.generators import write_sample_logs
 
+# Check for optional dependencies
+try:
+    import duckdb
+    HAS_DUCKDB = True
+except ImportError:
+    HAS_DUCKDB = False
+
+try:
+    import pyarrow
+    HAS_PYARROW = True
+except ImportError:
+    HAS_PYARROW = False
+
 
 @pytest.fixture
 def runner():
@@ -319,6 +332,7 @@ class TestUpdateMode:
 class TestDuckDBParquetFormats:
     """Tests for DuckDB and Parquet output formats."""
 
+    @pytest.mark.skipif(not HAS_DUCKDB, reason="duckdb not installed")
     def test_parse_duckdb(self, runner, sample_log, patterns_file, tmp_path):
         """Test parse to DuckDB format."""
         output = tmp_path / "output.duckdb"
@@ -329,6 +343,7 @@ class TestDuckDBParquetFormats:
         assert result.exit_code == 0
         assert output.exists()
 
+    @pytest.mark.skipif(not HAS_PYARROW, reason="pyarrow not installed")
     def test_parse_parquet(self, runner, sample_log, patterns_file, tmp_path):
         """Test parse to Parquet format."""
         output = tmp_path / "output.parquet"
@@ -339,6 +354,7 @@ class TestDuckDBParquetFormats:
         assert result.exit_code == 0
         assert output.exists()
 
+    @pytest.mark.skipif(not HAS_DUCKDB, reason="duckdb not installed")
     def test_auto_duckdb(self, runner, sample_log, tmp_path):
         """Test auto with DuckDB output."""
         output = tmp_path / "output.duckdb"
@@ -347,6 +363,7 @@ class TestDuckDBParquetFormats:
         assert result.exit_code == 0
         assert output.exists()
 
+    @pytest.mark.skipif(not HAS_PYARROW, reason="pyarrow not installed")
     def test_auto_parquet(self, runner, sample_log, tmp_path):
         """Test auto with Parquet output."""
         output = tmp_path / "output.parquet"
