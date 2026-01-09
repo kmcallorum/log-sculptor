@@ -1,5 +1,4 @@
 """Tests for field type detection."""
-import pytest
 from log_sculptor.types.detector import (
     detect_type,
     detect_types_for_fields,

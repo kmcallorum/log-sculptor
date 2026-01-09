@@ -24,9 +24,9 @@ class TestPatternSetMatch:
         patterns = learn_patterns(log_file)
 
         # Create a line that won't match any pattern
-        pattern, fields = patterns.match("completely different structure 123 456 789 @@@")
         # Either matches or doesn't - both are valid
         # The point is to exercise the match code path
+        patterns.match("completely different structure 123 456 789 @@@")
 
 
 class TestPatternSetSaveError:

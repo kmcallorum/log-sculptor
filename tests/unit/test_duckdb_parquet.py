@@ -1,26 +1,15 @@
 """Tests for DuckDB and Parquet output writers."""
 import pytest
-from pathlib import Path
 
-from log_sculptor.core.patterns import ParsedRecord, PatternSet, learn_patterns, parse_logs
+from log_sculptor.core.patterns import ParsedRecord, learn_patterns, parse_logs
 from log_sculptor.outputs.duckdb import write_duckdb, _sanitize_column_name
 from log_sculptor.outputs.parquet import write_parquet, _sanitize_column_name as parquet_sanitize
 from log_sculptor.testing.generators import write_sample_logs
 
 # Check for optional dependencies
-try:
-    import duckdb as _duckdb  # noqa: F401
-    HAS_DUCKDB = True
-    del _duckdb
-except ImportError:
-    HAS_DUCKDB = False
-
-try:
-    import pyarrow as _pyarrow  # noqa: F401
-    HAS_PYARROW = True
-    del _pyarrow
-except ImportError:
-    HAS_PYARROW = False
+import importlib.util
+HAS_DUCKDB = importlib.util.find_spec("duckdb") is not None
+HAS_PYARROW = importlib.util.find_spec("pyarrow") is not None
 
 
 @pytest.fixture

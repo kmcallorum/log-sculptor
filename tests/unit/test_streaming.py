@@ -1,6 +1,5 @@
 """Tests for streaming and performance optimizations."""
 import pytest
-from pathlib import Path
 
 from log_sculptor.core.streaming import (
     stream_parse,

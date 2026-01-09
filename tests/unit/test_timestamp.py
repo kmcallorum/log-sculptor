@@ -1,5 +1,4 @@
 """Tests for timestamp detection and parsing."""
-import pytest
 from datetime import datetime
 
 from log_sculptor.types.timestamp import (

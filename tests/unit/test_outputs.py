@@ -1,9 +1,8 @@
 """Tests for output writers."""
 import pytest
 import sqlite3
-from pathlib import Path
 
-from log_sculptor.core.patterns import PatternSet, learn_patterns, parse_logs, ParsedRecord
+from log_sculptor.core.patterns import learn_patterns, parse_logs, ParsedRecord
 from log_sculptor.outputs.sqlite import write_sqlite
 from log_sculptor.outputs.jsonl import write_jsonl
 from log_sculptor.testing.generators import write_sample_logs
