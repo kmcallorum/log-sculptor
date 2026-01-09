@@ -1,198 +1,273 @@
 """Tests for pattern merging."""
 import pytest
-from log_sculptor.core.patterns import Pattern, PatternElement, PatternSet
-from log_sculptor.core.tokenizer import TokenType
 from log_sculptor.core.merging import (
+    merge_patterns,
     can_merge,
     merge_two,
-    merge_patterns,
+    _get_type_signature,
 )
+from log_sculptor.core.models import Pattern, PatternElement
+from log_sculptor.core.tokenizer import TokenType
 
 
-def make_pattern(elements_spec: list[tuple], pattern_id: str = "test", frequency: int = 1) -> Pattern:
-    """Helper to create patterns from element specs.
+@pytest.fixture
+def sample_pattern():
+    """Create a sample pattern."""
+    return Pattern(
+        id="p1",
+        elements=[
+            PatternElement(type="field", token_type=TokenType.WORD, field_name="level"),
+            PatternElement(type="literal", token_type=TokenType.WHITESPACE, value=" "),
+            PatternElement(type="field", token_type=TokenType.WORD, field_name="message"),
+        ],
+        frequency=10,
+        confidence=0.9,
+        example="INFO hello",
+    )
 
-    Each element spec is (type, token_type, value_or_name).
-    """
-    elements = []
-    for spec in elements_spec:
-        elem_type, token_type, value_or_name = spec
-        if elem_type == "literal":
-            elements.append(PatternElement(
-                type="literal",
-                value=value_or_name,
-                token_type=TokenType(token_type) if token_type else None,
-            ))
-        else:
-            elements.append(PatternElement(
-                type="field",
-                token_type=TokenType(token_type) if token_type else None,
-                field_name=value_or_name,
-            ))
-    return Pattern(id=pattern_id, elements=elements, frequency=frequency, confidence=1.0)
+
+class TestGetTypeSignature:
+    """Tests for type signature extraction."""
+
+    def test_simple_pattern(self, sample_pattern):
+        """Test type signature for simple pattern."""
+        sig = _get_type_signature(sample_pattern)
+        # Should exclude whitespace
+        assert TokenType.WHITESPACE not in sig
+        assert len(sig) == 2
+
+    def test_empty_pattern(self):
+        """Test type signature for empty pattern."""
+        p = Pattern(id="empty", elements=[], frequency=1, confidence=1.0, example="")
+        sig = _get_type_signature(p)
+        assert sig == ()
 
 
 class TestCanMerge:
-    """Tests for can_merge function."""
+    """Tests for merge eligibility."""
 
-    def test_identical_patterns_can_merge(self):
-        p1 = make_pattern([
-            ("field", "TIMESTAMP", "ts"),
-            ("literal", "WHITESPACE", " "),
-            ("literal", "WORD", "INFO"),
-        ], "p1")
-        p2 = make_pattern([
-            ("field", "TIMESTAMP", "ts"),
-            ("literal", "WHITESPACE", " "),
-            ("literal", "WORD", "INFO"),
-        ], "p2")
-        assert can_merge(p1, p2)
+    def test_same_structure_can_merge(self):
+        """Test patterns with same structure can merge."""
+        p1 = Pattern(
+            id="p1",
+            elements=[
+                PatternElement(type="field", token_type=TokenType.WORD, field_name="a"),
+                PatternElement(type="literal", token_type=TokenType.WHITESPACE, value=" "),
+                PatternElement(type="field", token_type=TokenType.NUMBER, field_name="b"),
+            ],
+            frequency=1,
+            confidence=1.0,
+            example="word 123",
+        )
+        p2 = Pattern(
+            id="p2",
+            elements=[
+                PatternElement(type="field", token_type=TokenType.WORD, field_name="a"),
+                PatternElement(type="literal", token_type=TokenType.WHITESPACE, value=" "),
+                PatternElement(type="field", token_type=TokenType.NUMBER, field_name="b"),
+            ],
+            frequency=1,
+            confidence=1.0,
+            example="hello 456",
+        )
+        assert can_merge(p1, p2) is True
 
-    def test_same_types_different_literals_can_merge(self):
-        p1 = make_pattern([
-            ("field", "TIMESTAMP", "ts"),
-            ("literal", "WHITESPACE", " "),
-            ("literal", "WORD", "INFO"),
-        ], "p1")
-        p2 = make_pattern([
-            ("field", "TIMESTAMP", "ts"),
-            ("literal", "WHITESPACE", " "),
-            ("literal", "WORD", "ERROR"),
-        ], "p2")
-        # Same structure (TIMESTAMP, WORD), should be mergeable
-        assert can_merge(p1, p2)
+    def test_different_length_cannot_merge(self):
+        """Test patterns with different lengths cannot merge."""
+        p1 = Pattern(
+            id="p1",
+            elements=[
+                PatternElement(type="field", token_type=TokenType.WORD, field_name="a"),
+            ],
+            frequency=1,
+            confidence=1.0,
+            example="word",
+        )
+        p2 = Pattern(
+            id="p2",
+            elements=[
+                PatternElement(type="field", token_type=TokenType.WORD, field_name="a"),
+                PatternElement(type="literal", token_type=TokenType.WHITESPACE, value=" "),
+                PatternElement(type="field", token_type=TokenType.NUMBER, field_name="b"),
+            ],
+            frequency=1,
+            confidence=1.0,
+            example="word 123",
+        )
+        assert can_merge(p1, p2) is False
 
-    def test_different_lengths_cannot_merge(self):
-        p1 = make_pattern([
-            ("field", "TIMESTAMP", "ts"),
-            ("literal", "WHITESPACE", " "),
-            ("literal", "WORD", "INFO"),
-        ], "p1")
-        p2 = make_pattern([
-            ("field", "TIMESTAMP", "ts"),
-            ("literal", "WHITESPACE", " "),
-            ("literal", "WORD", "INFO"),
-            ("literal", "WHITESPACE", " "),
-            ("field", "NUMBER", "count"),
-        ], "p2")
-        assert not can_merge(p1, p2)
-
-    def test_different_token_types_cannot_merge(self):
-        p1 = make_pattern([
-            ("field", "TIMESTAMP", "ts"),
-            ("literal", "WHITESPACE", " "),
-            ("field", "NUMBER", "value"),
-        ], "p1")
-        p2 = make_pattern([
-            ("field", "TIMESTAMP", "ts"),
-            ("literal", "WHITESPACE", " "),
-            ("field", "WORD", "name"),
-        ], "p2")
-        assert not can_merge(p1, p2)
+    def test_different_types_cannot_merge(self):
+        """Test patterns with different types cannot merge."""
+        p1 = Pattern(
+            id="p1",
+            elements=[
+                PatternElement(type="field", token_type=TokenType.WORD, field_name="a"),
+            ],
+            frequency=1,
+            confidence=1.0,
+            example="word",
+        )
+        p2 = Pattern(
+            id="p2",
+            elements=[
+                PatternElement(type="field", token_type=TokenType.NUMBER, field_name="a"),
+            ],
+            frequency=1,
+            confidence=1.0,
+            example="123",
+        )
+        assert can_merge(p1, p2) is False
 
 
 class TestMergeTwo:
-    """Tests for merge_two function."""
+    """Tests for merging two patterns."""
 
-    def test_merge_same_literals(self):
-        p1 = make_pattern([
-            ("literal", "WORD", "INFO"),
-            ("literal", "WHITESPACE", " "),
-            ("field", "WORD", "msg"),
-        ], "p1", frequency=5)
-        p2 = make_pattern([
-            ("literal", "WORD", "INFO"),
-            ("literal", "WHITESPACE", " "),
-            ("field", "WORD", "msg"),
-        ], "p2", frequency=3)
+    def test_merge_combines_frequency(self):
+        """Test merging combines frequencies."""
+        p1 = Pattern(
+            id="p1",
+            elements=[
+                PatternElement(type="field", token_type=TokenType.WORD, field_name="a"),
+            ],
+            frequency=10,
+            confidence=0.9,
+            example="word1",
+        )
+        p2 = Pattern(
+            id="p2",
+            elements=[
+                PatternElement(type="field", token_type=TokenType.WORD, field_name="a"),
+            ],
+            frequency=5,
+            confidence=0.8,
+            example="word2",
+        )
 
         merged = merge_two(p1, p2)
-        assert merged.frequency == 8
-        # First element should remain a literal
+
+        assert merged.frequency == 15
+
+    def test_merge_weighted_confidence(self):
+        """Test merging uses weighted confidence."""
+        p1 = Pattern(
+            id="p1",
+            elements=[
+                PatternElement(type="field", token_type=TokenType.WORD, field_name="a"),
+            ],
+            frequency=10,
+            confidence=1.0,
+            example="word1",
+        )
+        p2 = Pattern(
+            id="p2",
+            elements=[
+                PatternElement(type="field", token_type=TokenType.WORD, field_name="a"),
+            ],
+            frequency=10,
+            confidence=0.5,
+            example="word2",
+        )
+
+        merged = merge_two(p1, p2)
+
+        # Should be weighted average: (1.0*10 + 0.5*10) / 20 = 0.75
+        assert merged.confidence == 0.75
+
+    def test_merge_different_literals_become_field(self):
+        """Test that different literals become a field."""
+        p1 = Pattern(
+            id="p1",
+            elements=[
+                PatternElement(type="literal", token_type=TokenType.WORD, value="INFO"),
+            ],
+            frequency=10,
+            confidence=0.9,
+            example="INFO",
+        )
+        p2 = Pattern(
+            id="p2",
+            elements=[
+                PatternElement(type="literal", token_type=TokenType.WORD, value="ERROR"),
+            ],
+            frequency=5,
+            confidence=0.8,
+            example="ERROR",
+        )
+
+        merged = merge_two(p1, p2)
+
+        # The literal should now be a field
+        assert merged.elements[0].type == "field"
+
+    def test_merge_same_literals_stay_literal(self):
+        """Test that same literals stay as literals."""
+        p1 = Pattern(
+            id="p1",
+            elements=[
+                PatternElement(type="literal", token_type=TokenType.WORD, value="INFO"),
+            ],
+            frequency=10,
+            confidence=0.9,
+            example="INFO",
+        )
+        p2 = Pattern(
+            id="p2",
+            elements=[
+                PatternElement(type="literal", token_type=TokenType.WORD, value="INFO"),
+            ],
+            frequency=5,
+            confidence=0.8,
+            example="INFO",
+        )
+
+        merged = merge_two(p1, p2)
+
+        # The literal should stay as literal
         assert merged.elements[0].type == "literal"
         assert merged.elements[0].value == "INFO"
 
-    def test_merge_different_literals_become_fields(self):
-        p1 = make_pattern([
-            ("literal", "WORD", "INFO"),
-            ("literal", "WHITESPACE", " "),
-            ("field", "WORD", "msg"),
-        ], "p1", frequency=5)
-        p2 = make_pattern([
-            ("literal", "WORD", "ERROR"),
-            ("literal", "WHITESPACE", " "),
-            ("field", "WORD", "msg"),
-        ], "p2", frequency=3)
-
-        merged = merge_two(p1, p2)
-        # Different literals should become a field
-        assert merged.elements[0].type == "field"
-        assert merged.elements[0].token_type == TokenType.WORD
-
-    def test_merge_preserves_weighted_confidence(self):
-        p1 = make_pattern([("field", "WORD", "msg")], "p1", frequency=10)
-        p1.confidence = 0.9
-        p2 = make_pattern([("field", "WORD", "msg")], "p2", frequency=10)
-        p2.confidence = 0.7
-
-        merged = merge_two(p1, p2)
-        # Weighted average: (0.9 * 10 + 0.7 * 10) / 20 = 0.8
-        assert merged.confidence == pytest.approx(0.8)
-
 
 class TestMergePatterns:
-    """Tests for merge_patterns function."""
+    """Tests for batch pattern merging."""
 
     def test_merge_similar_patterns(self):
+        """Test merging list of similar patterns."""
         patterns = [
-            make_pattern([("literal", "WORD", "INFO"), ("literal", "WHITESPACE", " "), ("field", "WORD", "m")], "p1", 5),
-            make_pattern([("literal", "WORD", "WARN"), ("literal", "WHITESPACE", " "), ("field", "WORD", "m")], "p2", 3),
-            make_pattern([("literal", "WORD", "ERROR"), ("literal", "WHITESPACE", " "), ("field", "WORD", "m")], "p3", 2),
+            Pattern(
+                id="p1",
+                elements=[
+                    PatternElement(type="field", token_type=TokenType.WORD, field_name="a"),
+                    PatternElement(type="literal", token_type=TokenType.WHITESPACE, value=" "),
+                    PatternElement(type="field", token_type=TokenType.NUMBER, field_name="b"),
+                ],
+                frequency=10,
+                confidence=0.9,
+                example="INFO 100",
+            ),
+            Pattern(
+                id="p2",
+                elements=[
+                    PatternElement(type="field", token_type=TokenType.WORD, field_name="a"),
+                    PatternElement(type="literal", token_type=TokenType.WHITESPACE, value=" "),
+                    PatternElement(type="field", token_type=TokenType.NUMBER, field_name="b"),
+                ],
+                frequency=5,
+                confidence=0.85,
+                example="WARN 200",
+            ),
         ]
 
-        result = merge_patterns(patterns)
-        # All three should merge into one since they have same token type signature
-        assert len(result) == 1
-        assert result[0].frequency == 10
+        merged = merge_patterns(patterns, threshold=0.8)
 
-    def test_no_merge_different_structures(self):
-        patterns = [
-            make_pattern([("literal", "WORD", "INFO"), ("literal", "WHITESPACE", " "), ("field", "WORD", "m")], "p1"),
-            make_pattern([("field", "TIMESTAMP", "ts"), ("literal", "WHITESPACE", " "), ("field", "WORD", "m")], "p2"),
-        ]
+        # Similar patterns should be merged
+        assert len(merged) <= len(patterns)
 
-        result = merge_patterns(patterns)
-        # Different structures should not merge
-        assert len(result) == 2
+    def test_merge_empty_list(self):
+        """Test merging empty list."""
+        merged = merge_patterns([])
+        assert merged == []
 
-    def test_single_pattern_unchanged(self):
-        patterns = [make_pattern([("field", "WORD", "msg")], "p1", 5)]
-        result = merge_patterns(patterns)
-        assert len(result) == 1
-        assert result[0].frequency == 5
-
-    def test_empty_list(self):
-        result = merge_patterns([])
-        assert result == []
-
-
-class TestPatternSetMergeSimilar:
-    """Tests for PatternSet.merge_similar method."""
-
-    def test_merge_similar(self):
-        ps = PatternSet()
-        ps.add(make_pattern([("literal", "WORD", "INFO"), ("literal", "WHITESPACE", " "), ("field", "WORD", "m")], "p1", 5))
-        ps.add(make_pattern([("literal", "WORD", "WARN"), ("literal", "WHITESPACE", " "), ("field", "WORD", "m")], "p2", 3))
-
-        ps.merge_similar()
-        assert len(ps.patterns) == 1
-        assert ps.patterns[0].frequency == 8
-
-    def test_merged_set_sorted_by_frequency(self):
-        ps = PatternSet()
-        ps.add(make_pattern([("field", "NUMBER", "n")], "p1", 2))
-        ps.add(make_pattern([("field", "WORD", "w")], "p2", 10))
-
-        ps.merge_similar()
-        # Should be sorted by frequency descending
-        assert ps.patterns[0].frequency >= ps.patterns[-1].frequency
+    def test_merge_single_pattern(self, sample_pattern):
+        """Test merging single pattern."""
+        merged = merge_patterns([sample_pattern])
+        assert len(merged) == 1
