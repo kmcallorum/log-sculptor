@@ -1,7 +1,5 @@
 """Tests for pattern edge cases and error handling."""
 import pytest
-from pathlib import Path
-import tempfile
 
 from log_sculptor.core.patterns import (
     PatternSet,

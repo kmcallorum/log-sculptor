@@ -1,6 +1,5 @@
 """Tests for CLI commands."""
 import pytest
-from pathlib import Path
 from click.testing import CliRunner
 
 from log_sculptor.cli import main, learn, parse, auto, show, validate, merge, drift, fast_learn, generate
@@ -8,14 +7,16 @@ from log_sculptor.testing.generators import write_sample_logs
 
 # Check for optional dependencies
 try:
-    import duckdb
+    import duckdb as _duckdb  # noqa: F401
     HAS_DUCKDB = True
+    del _duckdb
 except ImportError:
     HAS_DUCKDB = False
 
 try:
-    import pyarrow
+    import pyarrow as _pyarrow  # noqa: F401
     HAS_PYARROW = True
+    del _pyarrow
 except ImportError:
     HAS_PYARROW = False
 

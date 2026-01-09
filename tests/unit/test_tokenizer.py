@@ -1,5 +1,4 @@
 """Tokenizer tests."""
-import pytest
 from log_sculptor.core.tokenizer import tokenize, Token, TokenType, token_signature
 
 

@@ -89,9 +89,8 @@ class TestParseTimestamp:
         ]
 
         for fmt in formats:
-            result = parse_timestamp(fmt)
             # Some may parse, some may not, but shouldn't error
-            pass
+            parse_timestamp(fmt)
 
 
 class TestNormalizeTimestamp:
@@ -153,7 +152,7 @@ class TestEdgeCases:
         """Test timestamps with leading/trailing whitespace."""
         result = parse_timestamp("  2024-01-15T10:30:00  ")
         # Should handle whitespace gracefully
-        pass
+        assert result is not None
 
     def test_very_old_date(self):
         """Test very old timestamp."""
@@ -292,13 +291,10 @@ class TestParseTimestampEdgeCases:
     def test_invalid_epoch_seconds(self):
         """Test invalid epoch timestamp."""
         # Very large number that would cause OSError
-        result = parse_timestamp("9999999999")
-        # May succeed or fail gracefully
-        pass
+        # May succeed or fail gracefully - just shouldn't raise
+        parse_timestamp("9999999999")
 
     def test_invalid_epoch_millis(self):
         """Test invalid epoch milliseconds."""
-        # Very large number
-        result = parse_timestamp("9999999999999")
-        # May succeed or fail gracefully
-        pass
+        # Very large number - may succeed or fail gracefully
+        parse_timestamp("9999999999999")
