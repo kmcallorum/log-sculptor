@@ -2,7 +2,7 @@
 import pytest
 from click.testing import CliRunner
 
-from log_sculptor.cli import main, learn, parse, auto, show, validate, merge, drift, fast_learn, generate
+from log_sculptor.cli import learn, parse, auto, show, validate, merge, drift, fast_learn, generate
 from log_sculptor.testing.generators import write_sample_logs
 
 # Check for optional dependencies
