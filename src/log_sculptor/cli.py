@@ -95,6 +95,7 @@ def parse(logfile: Path, patterns: Path, output_format: str, output: Path,
     if verbose:
         click.echo(f"Loaded {len(pattern_set.patterns)} patterns, parsing {logfile}...")
 
+    tmp_path = None
     if multiline:
         import tempfile
         with tempfile.NamedTemporaryFile(mode="w", suffix=".log", delete=False) as tmp:
@@ -106,27 +107,25 @@ def parse(logfile: Path, patterns: Path, output_format: str, output: Path,
     else:
         records = parse_logs(logfile, pattern_set)
 
-    if multiline:
+    # Consume iterator to list before cleanup (needed for multiline temp file)
+    records_list = list(records)
+
+    # Clean up temp file after records are consumed
+    if tmp_path:
         tmp_path.unlink()
 
+    if not include_unmatched:
+        records_list = [r for r in records_list if r.matched]
+
     if output_format == "jsonl":
-        count = write_jsonl(records, output, include_raw=include_raw, include_unmatched=include_unmatched)
+        count = write_jsonl(records_list, output, include_raw=include_raw, include_unmatched=True)
     elif output_format == "sqlite":
-        records_list = list(records)
-        if not include_unmatched:
-            records_list = [r for r in records_list if r.matched]
         count = write_sqlite(records_list, output, patterns=pattern_set, include_raw=include_raw)
     elif output_format == "duckdb":
         from log_sculptor.outputs import write_duckdb
-        records_list = list(records)
-        if not include_unmatched:
-            records_list = [r for r in records_list if r.matched]
         count = write_duckdb(records_list, output, patterns=pattern_set, include_raw=include_raw)
     elif output_format == "parquet":
         from log_sculptor.outputs import write_parquet
-        records_list = list(records)
-        if not include_unmatched:
-            records_list = [r for r in records_list if r.matched]
         count = write_parquet(records_list, output, patterns=pattern_set, include_raw=include_raw)
     else:
         raise ValueError(f"Unknown output format: {output_format}")
@@ -149,6 +148,7 @@ def auto(logfile: Path, output_format: str, output: Path, sample_size: int | Non
     if verbose:
         click.echo(f"Learning patterns from {logfile}...")
 
+    tmp_path = None
     if multiline:
         import tempfile
         with tempfile.NamedTemporaryFile(mode="w", suffix=".log", delete=False) as tmp:
@@ -166,19 +166,23 @@ def auto(logfile: Path, output_format: str, output: Path, sample_size: int | Non
             click.echo(f"Found {len(pattern_set.patterns)} patterns, parsing...")
         records = parse_logs(logfile, pattern_set)
 
-    if multiline:
+    # Consume iterator to list before cleanup (needed for multiline temp file)
+    records_list = list(records)
+
+    # Clean up temp file after records are consumed
+    if tmp_path:
         tmp_path.unlink()
 
     if output_format == "jsonl":
-        count = write_jsonl(records, output, include_raw=include_raw)
+        count = write_jsonl(records_list, output, include_raw=include_raw)
     elif output_format == "sqlite":
-        count = write_sqlite(list(records), output, patterns=pattern_set, include_raw=include_raw)
+        count = write_sqlite(records_list, output, patterns=pattern_set, include_raw=include_raw)
     elif output_format == "duckdb":
         from log_sculptor.outputs import write_duckdb
-        count = write_duckdb(list(records), output, patterns=pattern_set, include_raw=include_raw)
+        count = write_duckdb(records_list, output, patterns=pattern_set, include_raw=include_raw)
     elif output_format == "parquet":
         from log_sculptor.outputs import write_parquet
-        count = write_parquet(list(records), output, patterns=pattern_set, include_raw=include_raw)
+        count = write_parquet(records_list, output, patterns=pattern_set, include_raw=include_raw)
     else:
         raise ValueError(f"Unknown output format: {output_format}")
 

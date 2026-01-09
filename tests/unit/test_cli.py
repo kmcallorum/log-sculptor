@@ -287,28 +287,27 @@ class TestMultilineHandling:
         assert result.exit_code == 0
         assert output.exists()
 
-    @pytest.mark.skip(reason="CLI multiline parse has temp file race condition - needs fix")
     def test_parse_multiline(self, runner, multiline_log, tmp_path):
         """Test parse with multiline option."""
-        # Note: CLI has a bug where temp file is deleted before records consumed
         patterns_file = tmp_path / "patterns.json"
         runner.invoke(learn, [str(multiline_log), "-o", str(patterns_file), "--multiline"])
 
-        output = tmp_path / "output.db"
+        output = tmp_path / "output.jsonl"
         result = runner.invoke(parse, [
-            str(multiline_log), "-p", str(patterns_file), "-f", "sqlite",
+            str(multiline_log), "-p", str(patterns_file), "-f", "jsonl",
             "-o", str(output), "--multiline"
         ])
 
         assert result.exit_code == 0
+        assert output.exists()
 
-    @pytest.mark.skip(reason="CLI multiline auto has temp file race condition - needs fix")
     def test_auto_multiline(self, runner, multiline_log, tmp_path):
         """Test auto with multiline option."""
-        output = tmp_path / "output.db"
-        result = runner.invoke(auto, [str(multiline_log), "-f", "sqlite", "-o", str(output), "--multiline"])
+        output = tmp_path / "output.jsonl"
+        result = runner.invoke(auto, [str(multiline_log), "-f", "jsonl", "-o", str(output), "--multiline"])
 
         assert result.exit_code == 0
+        assert output.exists()
 
 
 class TestUpdateMode:
