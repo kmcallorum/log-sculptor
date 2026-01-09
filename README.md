@@ -3,6 +3,7 @@
 [![CI](https://github.com/kmcallorum/log-sculptor/actions/workflows/ci.yml/badge.svg)](https://github.com/kmcallorum/log-sculptor/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/kmcallorum/log-sculptor/actions/workflows/codeql.yml/badge.svg)](https://github.com/kmcallorum/log-sculptor/actions/workflows/codeql.yml)
 [![codecov](https://codecov.io/gh/kmcallorum/log-sculptor/branch/main/graph/badge.svg)](https://codecov.io/gh/kmcallorum/log-sculptor)
+[![pytest-agents](https://img.shields.io/badge/tested%20with-pytest--agents-blue)](https://pypi.org/project/pytest-agents/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 

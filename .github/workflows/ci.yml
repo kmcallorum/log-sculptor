@@ -35,7 +35,9 @@ jobs:
       if: matrix.python-version == '3.12'
       with:
         files: ./coverage.xml
+        token: ${{ secrets.CODECOV_TOKEN }}
         fail_ci_if_error: false
+        verbose: true
 
   lint:
     runs-on: ubuntu-latest
