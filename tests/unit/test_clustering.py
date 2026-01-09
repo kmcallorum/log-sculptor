@@ -1,5 +1,4 @@
 """Tests for log line clustering."""
-import pytest
 from log_sculptor.core.clustering import (
     cluster_lines,
     cluster_by_exact_signature,
