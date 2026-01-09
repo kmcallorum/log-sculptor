@@ -4,9 +4,11 @@ from log_sculptor.core.clustering import (
     cluster_lines,
     cluster_by_exact_signature,
     sequence_similarity,
+    jaccard_similarity,
     Cluster,
+    _compute_cohesion,
 )
-from log_sculptor.core.tokenizer import tokenize
+from log_sculptor.core.tokenizer import tokenize, TokenType
 
 
 class TestSequenceSimilarity:
@@ -156,3 +158,77 @@ class TestClusterClass:
 
         assert len(cluster.members) == 1
         assert cluster.cohesion == 0.9
+
+    def test_cluster_len(self):
+        """Test Cluster.__len__ method."""
+        tokens = tokenize("test line")
+        members = [(tokens, "test line"), (tokens, "test line 2")]
+        centroid = (TokenType.WORD, TokenType.WHITESPACE, TokenType.WORD)
+        cluster = Cluster(id=0, members=members, centroid=centroid, cohesion=0.9)
+
+        assert len(cluster) == 2
+
+
+class TestJaccardSimilarity:
+    """Tests for jaccard similarity calculation."""
+
+    def test_identical_sequences(self):
+        """Identical sequences should have similarity 1.0."""
+        seq = (TokenType.WORD, TokenType.NUMBER)
+        assert jaccard_similarity(seq, seq) == 1.0
+
+    def test_completely_different(self):
+        """Completely different sequences should have low similarity."""
+        seq1 = (TokenType.WORD, TokenType.WORD)
+        seq2 = (TokenType.NUMBER, TokenType.IP)
+        sim = jaccard_similarity(seq1, seq2)
+        assert sim == 0.0
+
+    def test_both_empty(self):
+        """Both empty sequences should have similarity 1.0."""
+        assert jaccard_similarity((), ()) == 1.0
+
+    def test_one_empty(self):
+        """One empty sequence should have similarity 0.0."""
+        assert jaccard_similarity((TokenType.WORD,), ()) == 0.0
+        assert jaccard_similarity((), (TokenType.WORD,)) == 0.0
+
+    def test_partial_match(self):
+        """Partial match should have intermediate similarity."""
+        seq1 = (TokenType.WORD, TokenType.NUMBER)
+        seq2 = (TokenType.WORD, TokenType.IP)
+        sim = jaccard_similarity(seq1, seq2)
+        assert 0.0 < sim < 1.0
+
+
+class TestComputeCohesion:
+    """Tests for cluster cohesion calculation."""
+
+    def test_single_member(self):
+        """Single member should have cohesion 1.0."""
+        tokens = tokenize("test line")
+        members = [(tokens, "test line")]
+        cohesion = _compute_cohesion(members)
+        assert cohesion == 1.0
+
+    def test_empty_members(self):
+        """Empty members should have cohesion 1.0."""
+        cohesion = _compute_cohesion([])
+        assert cohesion == 1.0
+
+    def test_identical_members(self):
+        """Identical members should have high cohesion."""
+        tokens = tokenize("test line")
+        members = [(tokens, "test line"), (tokens, "test line")]
+        cohesion = _compute_cohesion(members)
+        assert cohesion == 1.0
+
+    def test_similar_members(self):
+        """Similar members should have high cohesion."""
+        members = [
+            (tokenize("INFO message one"), "INFO message one"),
+            (tokenize("WARN message two"), "WARN message two"),
+        ]
+        cohesion = _compute_cohesion(members)
+        # Similar structure = high cohesion
+        assert cohesion > 0.5

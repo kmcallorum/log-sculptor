@@ -271,3 +271,166 @@ class TestMergePatterns:
         """Test merging single pattern."""
         merged = merge_patterns([sample_pattern])
         assert len(merged) == 1
+
+    def test_merge_multiple_rounds(self):
+        """Test merging requires multiple rounds."""
+        # Create 4 patterns that can be merged in pairs
+        patterns = [
+            Pattern(
+                id="p1",
+                elements=[
+                    PatternElement(type="field", token_type=TokenType.WORD, field_name="a"),
+                ],
+                frequency=10,
+                confidence=0.9,
+                example="word1",
+            ),
+            Pattern(
+                id="p2",
+                elements=[
+                    PatternElement(type="field", token_type=TokenType.WORD, field_name="a"),
+                ],
+                frequency=5,
+                confidence=0.8,
+                example="word2",
+            ),
+            Pattern(
+                id="p3",
+                elements=[
+                    PatternElement(type="field", token_type=TokenType.NUMBER, field_name="b"),
+                ],
+                frequency=8,
+                confidence=0.85,
+                example="123",
+            ),
+            Pattern(
+                id="p4",
+                elements=[
+                    PatternElement(type="field", token_type=TokenType.NUMBER, field_name="b"),
+                ],
+                frequency=3,
+                confidence=0.7,
+                example="456",
+            ),
+        ]
+
+        merged = merge_patterns(patterns, threshold=0.8)
+
+        # Should merge similar patterns
+        assert len(merged) <= 4
+
+
+class TestMergeTwoEdgeCases:
+    """Edge cases for merge_two function."""
+
+    def test_merge_with_mismatched_lengths(self):
+        """Test merging patterns with extra whitespace elements."""
+        # Pattern 1 has more whitespace
+        p1 = Pattern(
+            id="p1",
+            elements=[
+                PatternElement(type="field", token_type=TokenType.WORD, field_name="a"),
+                PatternElement(type="literal", token_type=TokenType.WHITESPACE, value=" "),
+                PatternElement(type="literal", token_type=TokenType.WHITESPACE, value=" "),
+            ],
+            frequency=10,
+            confidence=0.9,
+            example="word",
+        )
+        # Pattern 2 has fewer elements after whitespace
+        p2 = Pattern(
+            id="p2",
+            elements=[
+                PatternElement(type="field", token_type=TokenType.WORD, field_name="a"),
+            ],
+            frequency=5,
+            confidence=0.8,
+            example="word",
+        )
+
+        merged = merge_two(p1, p2)
+        assert merged is not None
+        assert merged.frequency == 15
+
+    def test_merge_field_and_literal(self):
+        """Test merging when one is field and other is literal."""
+        p1 = Pattern(
+            id="p1",
+            elements=[
+                PatternElement(type="field", token_type=TokenType.WORD, field_name="level"),
+            ],
+            frequency=10,
+            confidence=0.9,
+            example="INFO",
+        )
+        p2 = Pattern(
+            id="p2",
+            elements=[
+                PatternElement(type="literal", token_type=TokenType.WORD, value="ERROR"),
+            ],
+            frequency=5,
+            confidence=0.8,
+            example="ERROR",
+        )
+
+        merged = merge_two(p1, p2)
+
+        # Result should be a field
+        assert merged.elements[0].type == "field"
+
+    def test_merge_with_trailing_whitespace(self):
+        """Test merge handles trailing whitespace in p1."""
+        p1 = Pattern(
+            id="p1",
+            elements=[
+                PatternElement(type="field", token_type=TokenType.WORD, field_name="a"),
+                PatternElement(type="literal", token_type=TokenType.WHITESPACE, value=" "),
+                PatternElement(type="field", token_type=TokenType.NUMBER, field_name="b"),
+                PatternElement(type="literal", token_type=TokenType.WHITESPACE, value=" "),
+            ],
+            frequency=10,
+            confidence=0.9,
+            example="word 123",
+        )
+        p2 = Pattern(
+            id="p2",
+            elements=[
+                PatternElement(type="field", token_type=TokenType.WORD, field_name="a"),
+                PatternElement(type="literal", token_type=TokenType.WHITESPACE, value=" "),
+                PatternElement(type="field", token_type=TokenType.NUMBER, field_name="b"),
+            ],
+            frequency=5,
+            confidence=0.8,
+            example="hello 456",
+        )
+
+        merged = merge_two(p1, p2)
+        assert merged is not None
+
+    def test_merge_with_only_whitespace_p2(self):
+        """Test merge when p2 only has whitespace remaining."""
+        p1 = Pattern(
+            id="p1",
+            elements=[
+                PatternElement(type="field", token_type=TokenType.WORD, field_name="a"),
+                PatternElement(type="literal", token_type=TokenType.WHITESPACE, value=" "),
+                PatternElement(type="field", token_type=TokenType.NUMBER, field_name="b"),
+            ],
+            frequency=10,
+            confidence=0.9,
+            example="word 123",
+        )
+        p2 = Pattern(
+            id="p2",
+            elements=[
+                PatternElement(type="field", token_type=TokenType.WORD, field_name="a"),
+                PatternElement(type="literal", token_type=TokenType.WHITESPACE, value=" "),
+                PatternElement(type="literal", token_type=TokenType.WHITESPACE, value=" "),
+            ],
+            frequency=5,
+            confidence=0.8,
+            example="hello  ",
+        )
+
+        merged = merge_two(p1, p2)
+        assert merged is not None

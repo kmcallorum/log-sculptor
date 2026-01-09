@@ -60,6 +60,42 @@ class TestDriftReport:
         assert "100" in summary
         assert "80" in summary
 
+    def test_summary_with_format_changes(self):
+        from log_sculptor.core.drift import FormatChange
+        changes = [
+            FormatChange(line_number=50, old_pattern_id="p1", new_pattern_id="p2", confidence=0.9),
+            FormatChange(line_number=75, old_pattern_id="p2", new_pattern_id="p3", confidence=0.8),
+        ]
+        report = DriftReport(
+            total_lines=100,
+            matched_lines=90,
+            pattern_distribution={"p1": 50, "p2": 25, "p3": 25},
+            format_changes=changes,
+            dominant_patterns=[],
+        )
+        summary = report.summary()
+        assert "Format changes" in summary
+        assert "Line 50" in summary
+        assert "p1" in summary
+        assert "p2" in summary
+
+    def test_summary_many_format_changes(self):
+        """Test summary truncates when > 5 format changes."""
+        from log_sculptor.core.drift import FormatChange
+        changes = [
+            FormatChange(line_number=i * 10, old_pattern_id=f"p{i}", new_pattern_id=f"p{i+1}", confidence=0.9)
+            for i in range(10)
+        ]
+        report = DriftReport(
+            total_lines=100,
+            matched_lines=90,
+            pattern_distribution={f"p{i}": 10 for i in range(10)},
+            format_changes=changes,
+            dominant_patterns=[],
+        )
+        summary = report.summary()
+        assert "... and 5 more" in summary
+
 
 class TestDriftDetector:
     """Tests for DriftDetector class."""

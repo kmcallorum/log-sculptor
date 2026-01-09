@@ -168,6 +168,27 @@ class TestNumericDetection:
         assert result.type == FieldType.FLOAT
         assert result.normalized == -123.45
 
+    def test_very_large_integer(self):
+        """Test very large integer is detected."""
+        large_int = "999999999999999999999999999999999999"
+        result = detect_type(large_int)
+        assert result.type == FieldType.INT
+        # Python handles arbitrary precision integers
+        assert result.normalized == int(large_int)
+
+    def test_zero(self):
+        """Test zero detection."""
+        # Note: "0" is also a boolean value
+        result = detect_type("0")
+        # Should be detected as bool (0 = False)
+        assert result.type == FieldType.BOOL
+
+    def test_regular_zero(self):
+        """Test regular integer zero."""
+        result = detect_type("00")  # Not in bool values
+        assert result.type == FieldType.INT
+        assert result.normalized == 0
+
 
 class TestTimestampDetection:
     """Tests for timestamp detection in detector."""

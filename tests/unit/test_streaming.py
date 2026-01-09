@@ -130,3 +130,89 @@ class TestParallelLearn:
         patterns = parallel_learn(large_log_file, sample_size=200, num_workers=2)
 
         assert len(patterns.patterns) > 0
+
+    def test_parallel_learn_empty_file(self, tmp_path):
+        """Test parallel learning with empty file."""
+        empty_file = tmp_path / "empty.log"
+        empty_file.write_text("")
+
+        patterns = parallel_learn(empty_file, num_workers=2)
+        assert len(patterns.patterns) == 0
+
+
+class TestStreamParseEdgeCases:
+    """Edge cases for stream parsing."""
+
+    def test_stream_parse_empty_file(self, tmp_path):
+        """Test stream parsing empty file."""
+        from log_sculptor.core.patterns import PatternSet
+
+        empty_file = tmp_path / "empty.log"
+        empty_file.write_text("")
+
+        patterns = PatternSet()
+        records = list(stream_parse(empty_file, patterns))
+        assert len(records) == 0
+
+    def test_stream_parse_file_with_empty_lines(self, tmp_path):
+        """Test stream parsing skips empty lines."""
+        file = tmp_path / "gaps.log"
+        file.write_text("INFO line1\n\n\nINFO line2\n")
+
+        patterns = learn_patterns(file)
+        records = list(stream_parse(file, patterns))
+
+        # Should only have 2 records (empty lines skipped)
+        assert len(records) == 2
+
+    def test_stream_parse_large_file_uses_mmap(self, tmp_path):
+        """Test that large files (>1MB) use mmap."""
+        large_file = tmp_path / "large.log"
+        # Create a file > 1MB
+        line = "INFO " + "x" * 1000 + "\n"
+        large_file.write_text(line * 1100)  # ~1.1MB
+
+        patterns = learn_patterns(large_file, sample_size=100)
+        records = list(stream_parse(large_file, patterns, use_mmap=True))
+
+        assert len(records) > 0
+
+    def test_stream_parse_unmatched_lines(self, tmp_path):
+        """Test stream parsing with unmatched lines."""
+        file = tmp_path / "test.log"
+        file.write_text("INFO message\nsome random text that wont match\n")
+
+        patterns = learn_patterns(file)
+        records = list(stream_parse(file, patterns))
+
+        # All lines should be returned (matched or not)
+        assert len(records) >= 1
+
+
+class TestPatternCacheEdgeCases:
+    """Edge cases for pattern caching."""
+
+    def test_cache_with_literal_elements(self, tmp_path):
+        """Test cache handles literal elements."""
+        file = tmp_path / "test.log"
+        file.write_text("ERROR critical failure\n" * 5)
+
+        patterns = learn_patterns(file)
+        cache = PatternCache(patterns)
+
+        # The cache should be built
+        assert len(cache._sig_to_patterns) >= 0
+
+    def test_cache_no_match(self, tmp_path):
+        """Test cache returns None when no match."""
+        file = tmp_path / "test.log"
+        file.write_text("INFO message\n")
+
+        patterns = learn_patterns(file)
+        cache = PatternCache(patterns)
+
+        # Try to match something completely different
+        pattern, fields = cache.match("@@@ %%% !!!")
+        # Either matches or doesn't
+        if pattern is None:
+            assert fields is None

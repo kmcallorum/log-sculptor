@@ -203,3 +203,50 @@ class TestOutputFieldHandling:
         row = cursor.fetchone()
         assert row is not None
         conn.close()
+
+
+class TestJSONLEdgeCases:
+    """Edge cases for JSONL output."""
+
+    def test_write_jsonl_skip_unmatched(self, tmp_path):
+        """Test that unmatched records are skipped when include_unmatched=False."""
+        records = [
+            ParsedRecord(line_number=1, raw="matched", fields={"f": "v"}, pattern_id="p1", matched=True, confidence=1.0),
+            ParsedRecord(line_number=2, raw="unmatched", fields={}, pattern_id=None, matched=False, confidence=0.0),
+            ParsedRecord(line_number=3, raw="matched2", fields={"f": "v"}, pattern_id="p1", matched=True, confidence=1.0),
+        ]
+
+        output = tmp_path / "output.jsonl"
+        count = write_jsonl(records, output, include_unmatched=False)
+
+        assert count == 2
+        lines = output.read_text().strip().split("\n")
+        assert len(lines) == 2
+
+    def test_write_jsonl_empty_records(self, tmp_path):
+        """Test JSONL write with empty records list."""
+        output = tmp_path / "output.jsonl"
+        count = write_jsonl([], output)
+
+        assert count == 0
+        assert output.read_text() == ""
+
+
+class TestSQLiteEdgeCases:
+    """Edge cases for SQLite output."""
+
+    def test_write_sqlite_empty_records(self, tmp_path):
+        """Test SQLite write with empty records list."""
+        output = tmp_path / "output.db"
+        count = write_sqlite([], output)
+
+        assert count == 0
+        assert output.exists()
+
+    def test_write_sqlite_no_typed(self, sample_records, tmp_path):
+        """Test SQLite write without typed fields."""
+        records, patterns = sample_records
+        output = tmp_path / "output.db"
+
+        count = write_sqlite(records, output, patterns=patterns, include_typed=False)
+        assert count == len(records)
