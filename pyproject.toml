@@ -12,7 +12,7 @@ requires-python = ">=3.10"
 authors = [
     { name = "Kevin McAllorum" }
 ]
-keywords = ["logging", "parsing", "patterns", "cli"]
+keywords = ["logging", "parsing", "patterns", "cli", "log-analysis", "etl", "data-pipeline"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
@@ -32,6 +32,11 @@ dependencies = [
     "orjson>=3.9",
     "python-dateutil>=2.8",
 ]
+
+[project.urls]
+Homepage = "https://github.com/kmcallorum/log-sculptor"
+Repository = "https://github.com/kmcallorum/log-sculptor"
+Issues = "https://github.com/kmcallorum/log-sculptor/issues"
 
 [project.optional-dependencies]
 dev = [
